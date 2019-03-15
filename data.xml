@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data>
+	<phrases> lang="ru">
+		<success>Всё в шоколаде</success>
+		<success>Хорошие новости</success>
+		<success>Радуйтесь</success>
+		<success>Пораа бухать</success>
+		<success>Дверь мне запилии</success>
+		<success>Как тебе такое Илон Маск!</success>
+		<success>Совпадение? Не думаю!</success>
+		<success>Здесь могла быть ваша реклама</success>
+		<fail>Хьюстон, у нас проблемы</fail>
+		<fail>Давайте за работу</fail>
+		<fail>Печаль, беда</fail>
+		<fail>Буллшит</fail>
+		<fail>Вот это поворот!</fail>
+		<fail>Самый страшный вирус всегда сидит перед компьютером</fail>
+		<fail>Работает? Не трогай!</fail>
+		<fail>Я твой сборка шатал!</fail>
+		<fail>Это фиаско, братан</fail>
+	</phrases>
+	<build key="LogViz2_Setup ">ЛоггВизз 32</build>
+	<build key="LogViz2_Setup_x64">ЛоггВизз 64</build>
+	<build key="IndigoSuite_Setup">Индиго сьют</build>
+</data>
