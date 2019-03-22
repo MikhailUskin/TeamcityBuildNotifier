@@ -9,19 +9,20 @@ import sys
 import re
 import os
 
-
-def voicemsg(textstr):
-    print(textstr)
-    msgpath = str(random.randint(1, 10000000)) + ".mp3"
-    tts = gtts.gTTS(text=textstr, lang="ru")
-    tts.save(msgpath)
-    with open(msgpath) as f:
-        pygame.mixer.music.load(msgpath)
+def playaudio(path):
+    with open(path) as f:
+        pygame.mixer.music.load(path)
         pygame.mixer.music.set_volume(1.0)
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy() == True:
             pygame.time.wait(10)
-    os.remove(msgpath)
+
+def genvoice(textstr):
+    print(textstr)
+    msgpath = str(random.randint(1, 10000000)) + ".mp3"
+    tts = gtts.gTTS(text=textstr, lang="ru")
+    tts.save(msgpath)
+    return msgpath
 
 
 def extractbuildnum(textstr):
@@ -42,17 +43,23 @@ def extractauthors(textstr):
 
 
 def voicesuccess(hello_msg, build_name, author_name, build_number, trans):
-    author_name = trans.translate(author_name, src='en', dest='ru').text
-    author_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
-    voicemsg(hello_msg + ". Сборка " + build_name +
-             " под номером " + str(build_number) + " завершена. " + author_msg)
+    authors_name = trans.translate(author_name, src='en', dest='ru').text
+    authors_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
+    audiopath = genvoice(hello_msg + ". Сборка " + build_name +
+             " под номером " + str(build_number) + " завершена. " + authors_msg)
+    playaudio("success_intro.wav")
+    playaudio(audiopath)
+    os.remove(audiopath)
 
 
 def voicefail(hello_msg, build_name, author_name, build_number, trans):
-    author_name = trans.translate(author_name, src='en', dest='ru').text
-    author_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
-    voicemsg(hello_msg + ". Сборка " + build_name +
-             "под номером " + str(build_number) + " сломана. " + author_msg)
+    authors_name = trans.translate(author_name, src='en', dest='ru').text
+    authors_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
+    audiopath = genvoice(hello_msg + ". Сборка " + build_name +
+             " под номером " + str(build_number) + " сломана. " + authors_msg)
+    playaudio("fail_intro.wav")
+    playaudio(audiopath)
+    os.remove(audiopath)
 
 
 def getstatus(entry):
