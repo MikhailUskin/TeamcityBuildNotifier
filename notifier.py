@@ -9,6 +9,7 @@ import sys
 import re
 import os
 
+
 def playaudio(path):
     with open(path) as f:
         pygame.mixer.music.load(path)
@@ -16,6 +17,7 @@ def playaudio(path):
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy() == True:
             pygame.time.wait(10)
+
 
 def genvoice(textstr):
     print(textstr)
@@ -42,22 +44,9 @@ def extractauthors(textstr):
     return full_names
 
 
-def voicesuccess(hello_msg, build_name, author_name, build_number, trans):
-    authors_name = trans.translate(author_name, src='en', dest='ru').text
-    authors_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
-    audiopath = genvoice(hello_msg + ". Сборка " + build_name +
-             " под номером " + str(build_number) + " завершена. " + authors_msg)
-    playaudio("success_intro.wav")
-    playaudio(audiopath)
-    os.remove(audiopath)
-
-
-def voicefail(hello_msg, build_name, author_name, build_number, trans):
-    authors_name = trans.translate(author_name, src='en', dest='ru').text
-    authors_msg = "Автор последнего коммита " + author_name if author_name != "" else ""
-    audiopath = genvoice(hello_msg + ". Сборка " + build_name +
-             " под номером " + str(build_number) + " сломана. " + authors_msg)
-    playaudio("fail_intro.wav")
+def voicemsg(intropath, textmsg):
+    audiopath = genvoice(textmsg)
+    playaudio(intropath)
     playaudio(audiopath)
     os.remove(audiopath)
 
@@ -75,33 +64,55 @@ def findentry(build_name, feed):
             return entry
     return None
 
+def genauthorsphrase(original_names):
+    if len(original_names) == 0:
+        return "Авторы сборки неизветсны "  
+    initial_phrase = ""
+    if len(original_names) == 1:
+        initial_phrase = "Автор сборки "
+    elif len(original_names) > 0:
+        initial_phrase = "Список авторов сборки: "
+    flattened_names = ", ".join([" ".join(n) for n in original_names])
+    trans = googletrans.Translator()
+    return initial_phrase + trans.translate(flattened_names, src='en', dest='ru').text
+    
+    
+def genintrophrase(original_phrases):
+    return original_phrases[random.randint(0, len(original_phrases)-1)]
+
+
+def voicestatus(entry, data, build_name, build_num):
+    author_names = extractauthors(entry.summary)
+    if len(author_names) == 0:
+        author_names = [[""]]
+    phrase_authors = genauthorsphrase(author_names)
+    if getstatus(entry) == 1:
+        phrase_intro = genintrophrase(data["success_phrases"])
+        text = phrase_intro + ". Сборка " + build_name + \
+             " под номером " + str(build_num) + " завершена. " + phrase_authors
+        voicemsg("success_intro.wav", text)    
+    else:
+        phrase_intro = genintrophrase(data["fail_phrases"])
+        text = phrase_intro + ". Сборка " + build_name + \
+             " под номером " + str(build_num) + " сломана. " + phrase_authors
+        voicemsg("fail_intro.wav", text)
+
 
 def loop(data):
     url = "http://172.20.20.72:8888/guestAuth/feed.html?itemsType=builds&buildStatus=successful&buildStatus=failed&userKey=guest&itemsCount=2"
     random.seed()
-    trans = googletrans.Translator()
     pygame.mixer.init()
     build_number = [0]*len(data["build_names"])
     while True:
         feed = feedparser.parse(url)
-        for i, name in enumerate(data["build_names"]):
-            entry = findentry(name[0], feed)
+        for i, build_name in enumerate(data["build_names"]):
+            entry = findentry(build_name[0], feed)
             if entry == None:
                 continue
-            extrbuildnum = extractbuildnum(entry.title)
-            if extrbuildnum != build_number[i]:
-                author_names = extractauthors(entry.summary)
-                if len(author_names) == 0:
-                    author_names = [[""]]
-                if getstatus(entry) == 1:
-                    suspect_name = " ".join(author_names[-1])
-                    voicesuccess(data["success_phrases"][random.randint(0, len(data["success_phrases"])-1)], name[1], suspect_name, extrbuildnum, trans)
-                else:
-                    suspect_name = ""
-                    if len(author_names) == 1:
-                        suspect_name = " ".join(author_names[-1])
-                    voicefail(data["fail_phrases"][random.randint(0, len(data["fail_phrases"])-1)], name[1], suspect_name, extrbuildnum, trans)
-                build_number[i] = extrbuildnum
+            build_num = extractbuildnum(entry.title)
+            if build_num != build_number[i]:
+                voicestatus(entry, data, build_name[1], build_num)
+                build_number[i] = build_num
         time.sleep(5)
 
 
