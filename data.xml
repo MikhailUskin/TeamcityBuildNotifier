@@ -8,22 +8,20 @@
 		<success>Дверь мне запили́</success>
 		<success>Как тебе такое Ило́н Маск?!</success>
 		<success>Совпадение? Не думаю!</success>
-		<success>Здесь могла быть ваша реклама</success>
-		<success>Пора отдыхать</success>
+		<success>Давайте отдыхать</success>
 		<success>Лёша, можешь выдохнуть!</success>
 		<success>Привет, Андрей!</success>
 		<fail>Хьюстон, у нас проблемы</fail>
 		<fail>Давайте за работу</fail>
 		<fail>Печаль, беда</fail>
-		<fail>Буллшит</fail>
 		<fail>Вот это повороот!</fail>
-		<fail>Самый страшный вирус всегда сидит перед компьютером</fail>
 		<fail>Работает? Не трогай!</fail>
 		<fail>Я твой сборка шатал!</fail>
 		<fail>Это фиаско, братан</fail>
 		<fail>Опять проблемки</fail>
 		<fail>НАЩАЛЬНИКА</fail>
 		<fail>Глеб, тащи свой бубен</fail>
+		<fail>Ту билд ор нот ту билд, в этот раз не билд</fail>
 	</phrases>
 	<build key="LogViz2_Setup ">ЛоггВизз 32</build>
 	<build key="LogViz2_Setup_x64">ЛоггВизз 64</build>

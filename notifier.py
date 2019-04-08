@@ -1,5 +1,10 @@
+# -*- coding: utf-8 -*-
+
+from bs4 import BeautifulSoup
+from threading import Thread
 import xml.etree.ElementTree as et
 import pygame
+import http.client
 import feedparser
 import googletrans
 import random
@@ -42,7 +47,7 @@ def extractauthors(textstr):
         name = [n for n in g.replace(",", "").replace(".", " ").replace("<", "").split(' ') if len(n) > 0]
         full_names.append(name)
     return full_names
-
+    
 
 def voicemsg(intropath, textmsg):
     audiopath = genvoice(textmsg)
@@ -66,13 +71,13 @@ def findentry(build_name, feed):
 
 def genauthorsphrase(original_names):
     if len(original_names) == 0:
-        return "Авторы сборки неизветсны "  
+        return u'Авторы сборки неизвестны'
     initial_phrase = ""
     if len(original_names) == 1:
-        initial_phrase = "Автор сборки "
+        initial_phrase = u'Автор сборки '
     elif len(original_names) > 0:
-        initial_phrase = "Список авторов сборки: "
-    flattened_names = ", ".join([" ".join(n) for n in original_names])
+        initial_phrase = 'Список авторов сборки: '
+    flattened_names = ', '.join([" ".join(n) for n in original_names])
     trans = googletrans.Translator()
     return initial_phrase + trans.translate(flattened_names, src='en', dest='ru').text
     
@@ -98,10 +103,25 @@ def voicestatus(entry, data, build_name, build_num):
         voicemsg("fail_intro.wav", text)
 
 
-def loop(data):
+def parse_jam_level(html_feed):
+    levelint = -1
+    parsed_html = BeautifulSoup(html_feed, "html.parser")
+    if parsed_html.body is None:
+        print("Can't parse response")
+        return levelint
+    levstr = parsed_html.body.find('div', attrs={'class':'traffic__rate-text'}).text
+    try:
+        levelint = int(levstr)
+    except ValueError as verr:
+        pass
+    except Exception as ex:
+        pass
+    return levelint
+
+
+def build_notifier_loop():
+    data = parse_settings("./data.xml")
     url = "http://172.20.20.72:8888/guestAuth/feed.html?itemsType=builds&buildStatus=successful&buildStatus=failed&userKey=guest&itemsCount=2"
-    random.seed()
-    pygame.mixer.init()
     build_number = [0]*len(data["build_names"])
     while True:
         feed = feedparser.parse(url)
@@ -114,6 +134,36 @@ def loop(data):
                 voicestatus(entry, data, build_name[1], build_num)
                 build_number[i] = build_num
         time.sleep(5)
+
+
+def traffic_notifier_loop():
+    data = parse_settings("./data.xml")
+    APP_VERSION = "0.1.0"
+    APP_ID = "teamcity-build-notifier"
+    USER_AGENT = "{0}/{1} ({2})".format(APP_ID, APP_VERSION,
+        "{0}/{1}".format("https://github.com/MikhailUskin", APP_ID))
+    previous_level = 0
+    while True:
+        conn = http.client.HTTPSConnection("www.yandex.ru")
+        conn.request("GET", "/", None, {"User-Agent": USER_AGENT})
+        resp = str(conn.getresponse().read().decode("utf-8"))
+        conn.close()
+        current_level = parse_jam_level(resp)
+        if current_level >= 7 and previous_level < 7:
+            phrase_intro = genintrophrase(data["fail_phrases"])
+            text = phrase_intro + ". Уровень пробок " + str(current_level) + " баллов"
+            voicemsg("fail_intro.wav", text)  
+        elif current_level <= 6 and previous_level > 6:
+            phrase_intro = genintrophrase(data["success_phrases"])
+            text = phrase_intro + ". Уровень пробок " + str(current_level) + " баллов"
+            voicemsg("success_intro.wav", text)
+        previous_level = current_level
+        time.sleep(10*60)
+
+
+def init_notifier():
+    random.seed()
+    pygame.mixer.init()
 
 
 def clean():
@@ -148,9 +198,20 @@ def parse_settings(path):
             "success_phrases": success_phrases, "fail_phrases": fail_phrases, "build_names": build_names}
 
 
+def deploy():
+    init_notifier()
+    thr1 = Thread(target=build_notifier_loop)
+    thr2 = Thread(target=traffic_notifier_loop)
+    thr1.start()
+    time.sleep(60)
+    thr2.start()
+    thr1.join()
+    thr2.join()
+
+
 def main():
     try:
-        loop(parse_settings("./data.xml"))
+        deploy()
     except KeyboardInterrupt:
         clean()
 
